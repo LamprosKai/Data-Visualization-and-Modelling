@@ -1,4 +1,4 @@
- library(shiny)
+library(shiny)
  
  dataset <- list('Upload a file'=c(1))
  
@@ -27,7 +27,8 @@ shinyUI(pageWithSidebar(
       condition = "input.plotting == true" ,
       
       
-      selectInput("plot",label="Plot Type",choices=list('None'='none',"Histogram"="hist","Linechart"="line","Pointchart"="point")),
+      selectInput("plot",label="Plot Type",choices=list('None'='none',"Histogram"="hist",'Density Chart'='dens',
+                                                        "Linechart"="line","Pointchart"="point")),
       
       conditionalPanel(
         condition = "input.plot == 'none'"
@@ -45,7 +46,7 @@ shinyUI(pageWithSidebar(
         sliderInput("bin",label="Binwidth",
                     min=0,max=200,value=1,step=0.1),
         
-        actionButton("goButton1", "Update View"),
+        actionButton("goButton1", strong("Update View", style = "color:blue")),
         
         
         selectInput("fil", "Fill",choices=
@@ -53,6 +54,25 @@ shinyUI(pageWithSidebar(
         
         selectInput('facet_row', 'Facet Row', c('None'='.',names(dataset))),
         selectInput('facet_col', 'Facet Column', c('None'='.',names(dataset)))
+        
+      ),
+      
+      conditionalPanel(
+        condition = "input.plot == 'dens'",
+        
+        selectInput(inputId = "attributes.dens",
+                    label = "ATTRIBUTES",
+                    choices=names(dataset)),
+        
+        
+        actionButton("goButton2", strong("Update View", style = "color:blue")),
+        
+        
+        selectInput("fil.dens", "Fill",choices=
+                      c('None'='.',names(dataset))),
+        
+        selectInput('facet_row.dens', 'Facet Row', c('None'='.',names(dataset))),
+        selectInput('facet_col.dens', 'Facet Column', c('None'='.',names(dataset)))
         
       ),
       
@@ -68,7 +88,8 @@ shinyUI(pageWithSidebar(
           inputId = "attributy",
           label = "Y",
           choices = names(dataset),
-        ) ,actionButton("goButton4", "Update View"),
+        ) ,
+        actionButton("goButton4", strong("Update View", style = "color:blue")),
         
         selectInput("filline", "Fill",choices=
                       c('None'='.',names(dataset))),
@@ -93,7 +114,8 @@ shinyUI(pageWithSidebar(
           inputId = "attry",
           label = "Y",
           choices = names(dataset),
-        ),actionButton("goButton5", "Update View"),
+        ),
+        actionButton("goButton5", strong("Update View", style = "color:blue")),
         
         selectInput("filpoint", "Fill",choices=
                       c('None'='.',names(dataset))),
@@ -109,7 +131,7 @@ shinyUI(pageWithSidebar(
       
     ),
     
-    checkboxInput("reg", "Regresion",
+    checkboxInput("reg", "Modelling",
                   value = FALSE),  
     
     conditionalPanel(  
@@ -124,11 +146,12 @@ shinyUI(pageWithSidebar(
  
   # conditionalPanel( 
    
-      selectInput(inputId = "reg_y",
+  selectInput(inputId = "reg_y",
                   label = "Response variable",
                   choices = names(dataset)
                  ),
   
+ 
   selectInput(inputId = "reg_x",
               label = "Predictor variable",
               choices = names(dataset)
@@ -143,6 +166,12 @@ shinyUI(pageWithSidebar(
     checkboxInput(inputId ="stder",label = "Std Error")
   ), 
   
+  checkboxInput(inputId = "mod_rlm",    label = "Robust Linear (F1)"),
+  conditionalPanel(
+    condition = "input.mod_rlm == true",
+    checkboxInput(inputId ="stder.rlm",label = "Std Error")
+  ), 
+  
   checkboxInput(inputId = "mod_quadratic", label = "Quadratic (dashed)"),
   conditionalPanel(
     condition = "input.mod_quadratic == true",
@@ -155,7 +184,9 @@ shinyUI(pageWithSidebar(
     checkboxInput(inputId ="stder.loess",label = "Std Error"),
  
     sliderInput(inputId = "mod_loess_span", label = "Smoothing (alpha)",
-                min = 0.15, max = 1, step = 0.05, value = 0.75))  
+                min = 0.15, max = 1, step = 0.05, value = 0.75)
+  )
+  
   )
   ),
 
@@ -167,16 +198,20 @@ shinyUI(pageWithSidebar(
       # number of observations
       
       tabsetPanel(
-        tabPanel("Contents", tableOutput('contents')),
+        tabPanel("Data", tableOutput('contents')),
         tabPanel("Plot", plotOutput("Plot", width = "1000px", height = "800px")),
         tabPanel('Summary',verbatimTextOutput('summary')),
         tabPanel('Regresion',plotOutput("Regresion", width = "1000px", height = "800px"),
                  
-                 conditionalPanel("input.mod_linear == true",p(strong("Linear model")), verbatimTextOutput(outputId = "mod_linear_text")),
+                 conditionalPanel("input.mod_linear == true",p(strong("Linear model")), 
+                                  verbatimTextOutput(outputId = "mod_linear_text")),
+                 conditionalPanel("input.mod_rlm == true",p(strong("Robust Linear model")), 
+                                  verbatimTextOutput(outputId = "mod_rlm_text")),
                  conditionalPanel("input.mod_quadratic == true",p(strong("Quadratic model")),
                                   verbatimTextOutput(outputId = "mod_quadratic_text")),
                  conditionalPanel("input.mod_loess == true",p(strong("LOESS model")),
                                   verbatimTextOutput(outputId = "mod_loess_text"))
+                 
                  
                  )
         
