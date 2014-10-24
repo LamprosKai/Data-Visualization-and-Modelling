@@ -1,5 +1,5 @@
 library(ggplot2)
-
+library(MASS)
 
 shinyServer(function(input, output,session) {
   
@@ -24,10 +24,10 @@ shinyServer(function(input, output,session) {
   
  observe({
  df <- data()
- str(names(df))
- 
+
  if (!is.null(df)) {
    updateSelectInput(session, 'attributes', choices = names(df))
+   updateSelectInput(session, 'attributes.dens', choices = names(df))
    
    updateSelectInput(session, 'attributx', choices = names(df))
    updateSelectInput(session, 'attributy', choices = names(df))
@@ -37,15 +37,21 @@ shinyServer(function(input, output,session) {
    
    updateSelectInput(session, 'sizeline', choices = c(None='.', names(df)))
    updateSelectInput(session, 'sizepoint', choices = c(None='.', names(df)))
-   updateSelectInput(session, 'fil', choices = c(None='.', names(df)))
    
+   updateSelectInput(session, 'fil', choices = c(None='.', names(df)))
+   updateSelectInput(session, 'fil.dens', choices = c(None='.', names(df)))
    updateSelectInput(session, 'filline', choices = c(None='.', names(df)))
    updateSelectInput(session, 'filpoint', choices = c(None='.', names(df)))
-   updateSelectInput(session, 'facet_row', choices = c(None='.', names(df)))
    
+   
+   updateSelectInput(session, 'facet_col', choices = c(None='.', names(df)))
+   updateSelectInput(session, 'facet_row', choices = c(None='.', names(df)))
+   updateSelectInput(session, 'facet_colline', choices = c(None='.', names(df)))
    updateSelectInput(session, 'facet_rowline', choices = c(None='.', names(df)))
    updateSelectInput(session, 'facet_rowpoint', choices = c(None='.', names(df)))
-   updateSelectInput(session, 'facet_col', choices = c(None='.', names(df)))
+   updateSelectInput(session, 'facet_colpoint', choices = c(None='.', names(df)))
+   updateSelectInput(session, 'facet_col.dens', choices = c(None='.', names(df)))
+   updateSelectInput(session, 'facet_row.dens', choices = c(None='.', names(df)))
    
    updateSelectInput(session, 'reg_y', choices = c(None='.', names(df)))
    updateSelectInput(session, 'reg_x', choices = c(None='.', names(df)))
@@ -65,7 +71,7 @@ output$Plot <- renderPlot({
     return(NULL) 
   input$goButton
   input$goButton1
-  
+  input$goButton2
   input$goButton4
   input$goButton5
   
@@ -73,6 +79,7 @@ output$Plot <- renderPlot({
     return(NULL)
   }
   
+  #plotting parameters
   isolate({
     
     if ( input$plot == "hist" ) {
@@ -88,7 +95,7 @@ output$Plot <- renderPlot({
  
       #plot
       p <- ggplot(data(),mapping=aes_mapping ) +
-        geom_histogram(binwidth=isolate(input$bin))
+        geom_histogram(binwidth=input$bin)
       
       facets <- paste(input$facet_row, '~', input$facet_col)
       if (facets != '. ~ .')
@@ -97,17 +104,48 @@ output$Plot <- renderPlot({
     }
     
   }) 
+  
+  isolate({
+    
+    if ( input$plot == "dens" ) {
+      
+      if(input$fil.dens!="." ){
+        aes_mapping <- aes_string(x = input$attributes.dens,group=input$fil.dens,fill=input$fil.dens) } #
+      
+      
+      else{
+        
+        aes_mapping <- aes_string(x =input$attributes.dens)  }
+      
+      
+      #plot
+      p <- ggplot(data(),mapping=aes_mapping ) +
+        geom_density(alpha=.3)
+      
+      facets <- paste(input$facet_row.dens, '~', input$facet_col.dens)
+      if (facets != '. ~ .')
+        p <- p + facet_grid(facets,scales='free')  +theme(axis.text.x=element_text(angle = 90, hjust = 1,vjust=0.4,size=9))
+      
+    }
+    
+  })
+  
+  
+  
+  
+  isolate({
+  
   if ( input$plot == "line" ) {
     
     if(input$filline!='.' ){
       if(input$sizeline!='.'){
-        aes_mapping <- aes_string(x =isolate(input$attributx),y=isolate(input$attributy),color=input$filline,size=input$sizeline) }       #
+        aes_mapping <- aes_string(x =input$attributx,y=input$attributy,color=input$filline,size=input$sizeline) }       #
       else{
-        aes_mapping <- aes_string(x =isolate(input$attributx),y=isolate(input$attributy),color=input$filline) }
+        aes_mapping <- aes_string(x =input$attributx,y=input$attributy,color=input$filline) }
     }
     
     else{
-      aes_mapping <- aes_string(x =isolate(input$attributx),y=isolate(input$attributy))   }
+      aes_mapping <- aes_string(x =input$attributx,y=input$attributy)   }
     
     #plot
     p <- ggplot(data(),mapping=aes_mapping ) +
@@ -117,19 +155,21 @@ output$Plot <- renderPlot({
     if (facets != '. ~ .')
       p <- p + facet_grid(facets)  +theme(axis.text.x=element_text(angle = 90, hjust = 1,vjust=0.4,size=9))
     
-  } 
+  }
+  })
   
+  isolate({
   if ( input$plot == "point" ) {
     
     if(input$filpoint!='.' ){
       if(input$sizepoint!='.'){
-        aes_mapping <- aes_string(x =isolate(input$attrx),y=isolate(input$attry),color=input$filpoint,size=input$sizepoint) }     
+        aes_mapping <- aes_string(x =input$attrx,y=input$attry,color=input$filpoint,size=input$sizepoint) }     
       else{
-        aes_mapping <- aes_string(x =isolate(input$attrx),y=isolate(input$attry),color=input$filpoint) }
+        aes_mapping <- aes_string(x =input$attrx,y=input$attry,color=input$filpoint) }
     }
     
     else{
-      aes_mapping <- aes_string(x =isolate(input$attrx),y=isolate(input$attry))  }
+      aes_mapping <- aes_string(x =input$attrx,y=input$attry)  }
     
     #plot
     p <- ggplot(data(),mapping=aes_mapping ) +
@@ -140,6 +180,7 @@ output$Plot <- renderPlot({
       p <- p + facet_grid(facets)  +theme(axis.text.x=element_text(angle = 90, hjust = 1,vjust=0.4,size=9))
     
   }   
+  })
   
   print(p)
 })
@@ -154,7 +195,7 @@ output$Plot <- renderPlot({
     # Make the base plot
     
     # If any models are drawn, make the points less prominent
-    if (input$mod_linear || input$mod_quadratic || input$mod_loess)
+    if (input$mod_linear || input$mod_quadratic || input$mod_loess || input$mod_rlm)
       point_alpha <- 0.5
     else
       point_alpha <- 1
@@ -178,6 +219,16 @@ output$Plot <- renderPlot({
      p <- p + geom_smooth(method = lm, se = FALSE, size = 0.75,
                           linetype = "twodash")
    }
+   
+   if ( (input$mod_rlm) & (input$stder.rlm) ){
+     p <- p + geom_smooth(method = rlm, se = TRUE, size = 0.75,
+                          linetype = "F1")
+   }
+   else if((input$mod_rlm)){
+     p <- p + geom_smooth(method = rlm, se = FALSE, size = 0.75,
+                          linetype = "F1")
+   }
+   
    
     if( (input$mod_quadratic) & (input$stder.quad) ) {
       p <- p + geom_smooth(method = lm, se = TRUE, formula = y ~ x + I(x^2),
@@ -227,6 +278,13 @@ output$Plot <- renderPlot({
    
     summary(make_model("lm", formula))
   })
+
+  output$mod_rlm_text <- renderPrint({
+    #formula <- paste(input$reg_y, "~", input$reg_x)
+    formula<-formula(paste(input$reg_y, '~',paste(input$reg_x)))
+  
+    summary(make_model("rlm", formula))
+})
   
   output$mod_quadratic_text <- renderPrint({
     formula <- paste(input$reg_y, " ~ ", "I(", input$reg_x, "^2) + ",
@@ -239,6 +297,8 @@ output$Plot <- renderPlot({
     formula <- paste(input$reg_y, "~", input$reg_x)
     summary(make_model("loess", formula, span = input$mod_loess_span))
   })
+
+
   
   
 })
