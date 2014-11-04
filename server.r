@@ -1,3 +1,4 @@
+
 library(ggplot2)
 library(MASS)
 
@@ -55,16 +56,14 @@ shinyServer(function(input, output,session) {
    
    updateSelectInput(session, 'reg_y', choices = c(None='.', names(df)))
    updateSelectInput(session, 'reg_x', choices = c(None='.', names(df)))
+   updateCheckboxGroupInput(session, 'mult_reg_x', choices = c(names(df)))
+   updateSelectInput(session, 'mult_reg_y', choices = c(None='.', names(df)))
    
-
   
  }
 }) 
  
 
-in_range <- function(x, range) {
-  x >= min(range) & x <= max(range)
-}
 
 output$Plot <- renderPlot({
   if (is.null(data()))
@@ -204,7 +203,7 @@ output$Plot <- renderPlot({
     
   
     # Base plot
-    p <- ggplot(data(), mapping = aes_string(x =input$reg_x,y=input$reg_y)) +
+    p <- ggplot(data(), mapping = aes_string(x =input$reg_x,y=input$reg_y)) + #,fill=input$reg_x,group=1
       geom_point(shape = 21, alpha = point_alpha)+
       scale_colour_hue(l = 40) +
       scale_shape(solid = FALSE) 
@@ -272,21 +271,25 @@ output$Plot <- renderPlot({
     # use do.call here with some quoting.
     do.call(model_type, args = list(formula = formula,data = quote(data()),  ...)) 
   }
-  
+
+
   output$mod_linear_text <- renderPrint({
-    formula <- paste(input$reg_y, "~", input$reg_x)
    
+    formula <- paste(input$reg_y, "~", input$reg_x)
+
     summary(make_model("lm", formula))
+   
   })
 
   output$mod_rlm_text <- renderPrint({
-    #formula <- paste(input$reg_y, "~", input$reg_x)
+    
     formula<-formula(paste(input$reg_y, '~',paste(input$reg_x)))
   
     summary(make_model("rlm", formula))
 })
   
   output$mod_quadratic_text <- renderPrint({
+    
     formula <- paste(input$reg_y, " ~ ", "I(", input$reg_x, "^2) + ",
                      input$reg_x, sep = "")
     
@@ -294,11 +297,35 @@ output$Plot <- renderPlot({
   })
   
   output$mod_loess_text <- renderPrint({
+    
     formula <- paste(input$reg_y, "~", input$reg_x)
+    
     summary(make_model("loess", formula, span = input$mod_loess_span))
   })
 
+output$mult_reg_text <- renderPrint({ 
+ 
+  input$goButtonmod
+  
+  if(input$goButtonmod > 0){
+    
+    isolate({
+    if(input$radio == "All"){
+      formula <- paste(input$mult_reg_y, "~.")
+      summary(make_model("lm", formula)) }
+      
+     else{
+    
+  formula <- paste(input$mult_reg_y, "~", paste(input$mult_reg_x,collapse='+'))
+  summary(make_model("lm", formula)) }
+    })
+  
+} else{
+  return(cat('Must choose one or more predictor variables and hit Update Model \n'))
+}
 
+
+})
   
   
 })
