@@ -1,4 +1,4 @@
-library(shiny)
+ library(shiny)
  
  dataset <- list('Upload a file'=c(1))
  
@@ -134,29 +134,35 @@ shinyUI(pageWithSidebar(
     checkboxInput("reg", "Modelling",
                   value = FALSE),  
     
-    conditionalPanel(  
+    tags$hr(),
+    
+    conditionalPanel(
       condition = "input.reg == true" ,
       
-            
+       
       conditionalPanel(
         condition = "input.reg == 'none'"
         
       ) ,
       
  
-  # conditionalPanel( 
+      checkboxInput(inputId = "simple", label = strong("Simple Regression")),
+      conditionalPanel(
+        condition = "input.simple == true",
    
   selectInput(inputId = "reg_y",
-                  label = "Response variable",
+                  label = strong("Response variable"),
                   choices = names(dataset)
                  ),
   
- 
-  selectInput(inputId = "reg_x",
-              label = "Predictor variable",
-              choices = names(dataset)
-  ),
+  selectInput(inputId='reg_x',
+                     label=strong('Predictor Variable'),
+                    choices=names(dataset)),
   
+
+    
+ 
+ 
   p(strong("Model predictions")),
   
   
@@ -186,9 +192,38 @@ shinyUI(pageWithSidebar(
     sliderInput(inputId = "mod_loess_span", label = "Smoothing (alpha)",
                 min = 0.15, max = 1, step = 0.05, value = 0.75)
   )
+      ),
+  tags$hr(),
+  
+  checkboxInput(inputId = "mult", label = strong("Multiple Regression")),
+  conditionalPanel(
+    condition = "input.mult == true",
+  selectInput(inputId = "mult_reg_y",
+              label = strong("Response variable"),
+              choices = names(dataset)
+  ),
+  radioButtons(
+    inputId="radio",
+    label=strong("Predictor variable Selection Type:"),
+    choices=list(
+      "All",
+      "Manual Select"
+    ),
+    selected="Manual Select"),
+  
+  conditionalPanel(
+    condition = "input.radio != 'All'",
+    checkboxGroupInput(
+      "mult_reg_x", 
+      "Choose Predictor variables",
+      choices=names(dataset) 
+      
+    )
+  ),
+ actionButton("goButtonmod", strong("Update Model", style = "color:blue"))
   
   )
-  ),
+  )),
 
  
     mainPanel(
@@ -198,10 +233,10 @@ shinyUI(pageWithSidebar(
       # number of observations
       
       tabsetPanel(
-        tabPanel("Data", tableOutput('contents')),
+        tabPanel("Data", tableOutput("contents")),
         tabPanel("Plot", plotOutput("Plot", width = "1000px", height = "800px")),
-        tabPanel('Summary',verbatimTextOutput('summary')),
-        tabPanel('Regresion',plotOutput("Regresion", width = "1000px", height = "800px"),
+        tabPanel("Summary",verbatimTextOutput("summary")),
+        tabPanel("Simple Regresion",plotOutput("Regresion", width = "1000px", height = "800px"),
                  
                  conditionalPanel("input.mod_linear == true",p(strong("Linear model")), 
                                   verbatimTextOutput(outputId = "mod_linear_text")),
@@ -211,9 +246,9 @@ shinyUI(pageWithSidebar(
                                   verbatimTextOutput(outputId = "mod_quadratic_text")),
                  conditionalPanel("input.mod_loess == true",p(strong("LOESS model")),
                                   verbatimTextOutput(outputId = "mod_loess_text"))
-                 
-                 
-                 )
+                  ),
+         tabPanel("Multiple Regression",verbatimTextOutput(outputId = "mult_reg_text"))
+        
         
         )
       
