@@ -58,8 +58,13 @@ shinyServer(function(input, output,session) {
    updateSelectInput(session, 'reg_x', choices = c(None='.', names(df)))
    updateCheckboxGroupInput(session, 'mult_reg_x', choices = c(names(df)))
    updateSelectInput(session, 'mult_reg_y', choices = c(None='.', names(df)))
-   
-  
+   updateSelectInput(session, 'glm_y', choices = c(None='.', names(df)))
+   updateCheckboxGroupInput(session, 'glm_x', choices = c(names(df)))
+   updateRadioButtons(session, 'family', choices=c(Gaussian='gauss',
+                                                         Poisson='pois',
+                                                         Binomial='binom',
+                                                   Negative.Binomial='neg.bin',
+                                                   Gamma='gamma'))
  }
 }) 
  
@@ -127,10 +132,7 @@ output$Plot <- renderPlot({
       
     }
     
-  })
-  
-  
-  
+  }) 
   
   isolate({
   
@@ -185,8 +187,7 @@ output$Plot <- renderPlot({
 })
   
   output$Regresion <- renderPlot({
-
-    
+   
     if (is.null(data()))
       return()
     
@@ -198,9 +199,7 @@ output$Plot <- renderPlot({
       point_alpha <- 0.5
     else
       point_alpha <- 1
-    
-  
-    
+     
   
     # Base plot
     p <- ggplot(data(), mapping = aes_string(x =input$reg_x,y=input$reg_y)) + #,fill=input$reg_x,group=1
@@ -265,11 +264,25 @@ output$Plot <- renderPlot({
   # ------------------------------------------------------------------
   # Functions for creating models and printing summaries
   
-  make_model <- function(model_type, formula, ...) {
+  make_model <- function(model_type, formula, family=NULL,...) {
     
     # In order to get the output to print the formula in a nice way, we'll
     # use do.call here with some quoting.
-    do.call(model_type, args = list(formula = formula,data = quote(data()),  ...)) 
+    if(!input$glm){
+    do.call(model_type, args = list(formula = formula,data = quote(data()),  ...)) }
+    
+    else if(input$family=='pois'){
+      do.call(model_type, args = list(formula = formula,data = quote(data()),family=poisson(),  ...))
+    }
+    else if(input$family=='binom'){
+      do.call(model_type, args = list(formula = formula,data = quote(data()),family=binomial(),  ...))
+    }
+    else if(input$family=='gamma'){
+      do.call(model_type, args = list(formula = formula,data = quote(data()),family=Gamma(link='log'),  ...))
+    }
+    else{
+      do.call(model_type, args = list(formula = formula,data = quote(data()),  ...))
+    }
   }
 
 
@@ -303,7 +316,7 @@ output$Plot <- renderPlot({
     summary(make_model("loess", formula, span = input$mod_loess_span))
   })
 
-output$mult_reg_text <- renderPrint({ 
+  output$mult_reg_text <- renderPrint({ 
  
   input$goButtonmod
   
@@ -326,6 +339,38 @@ output$mult_reg_text <- renderPrint({
 
 
 })
+
+  output$glm_text <- renderPrint({ 
+  
+   input$goButtonglm
+   
+   if(input$goButtonglm > 0){
+    
+    isolate({
+      
+    
+      if(input$radioglm == "All" && input$family != 'neg.bin'){
+        formula <- paste(input$glm_y, "~.")
+        summary(make_model("glm", formula)) }
+      
+      else if(input$radioglm != "All" && input$family != 'neg.bin'){
+        
+        formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='+')) #(link="'log'")
+        summary(make_model("glm", formula)) }
+      
+      else {
+        formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='+')) 
+        summary(make_model("glm.nb", formula)) 
+      }
+    })
+    
+  } else{
+    return(cat('Must choose one or more predictor variables and hit Update Model \n'))
+  }
+  
+  
+})
+
   
   
 })
