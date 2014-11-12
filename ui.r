@@ -4,7 +4,7 @@
  
 shinyUI(pageWithSidebar(
  
-  headerPanel("Data Visualization and Regression"),
+  headerPanel("Data Visualization and Modelling"),
  
   sidebarPanel(
     
@@ -28,7 +28,7 @@ shinyUI(pageWithSidebar(
       
       
       selectInput(inputId ="plot",label=strong("Plot Type"),
-                  choices=list('None'='none',"Histogram"="hist",'Density Chart'='dens',
+                  choices=list("None"="none","Histogram"="hist", "Barplot"="bar", "Density Chart"="dens",
                                                         "Linechart"="line","Pointchart"="point")),
       
       conditionalPanel(
@@ -56,6 +56,40 @@ shinyUI(pageWithSidebar(
         selectInput(inputId ='facet_row', label ='Facet Row', 
                     choices= c('None'='.',names(dataset))),
         selectInput(inputId ='facet_col', label ='Facet Column', 
+                    choices= c('None'='.',names(dataset)))
+        
+      ),
+      
+      conditionalPanel(
+        condition = "input.plot == 'bar'",
+        
+        selectInput(inputId = "attributes.bar",
+                    label = "ATTRIBUTES",
+                    choices=names(dataset)),
+        
+        
+        checkboxInput(inputId ="identity", label ="Stat.Identity",
+                      value = FALSE),  
+        
+        conditionalPanel(  
+          condition = "input.identity == true" ,
+        
+          selectInput(inputId = "attributes.ident",
+                      label = "ATTRIBUTES",
+                      choices=names(dataset))
+          
+          ),
+       
+        
+        actionButton(inputId ="goButton3", label =strong("Update View", style = "color:blue")),
+        
+        
+        selectInput(inputId ="filbar", label ="Fill",
+                    choices=c('None'='.',names(dataset))),
+        
+        selectInput(inputId ='facet_row.bar', label ='Facet Row', 
+                    choices= c('None'='.',names(dataset))),
+        selectInput(inputId ='facet_col.bar', label ='Facet Column', 
                     choices= c('None'='.',names(dataset)))
         
       ),
@@ -135,9 +169,8 @@ shinyUI(pageWithSidebar(
         selectInput(inputId ='facet_colpoint', label ='Facet Column', 
                     choices= c('None'='.',names(dataset)))
         
-      )                
-      
-      
+      )
+     
     ),
     
     checkboxInput(inputId ="reg", label ="Modelling",
@@ -229,6 +262,16 @@ shinyUI(pageWithSidebar(
       
     )
   ),
+  selectInput(
+    inputId="radio.plots",
+    label=strong("Diagnostic Plots"),
+    choices=list(
+      "avplot"="Added_Variable_Plot",
+      "resplot"="Residual_Plot",
+      "margplot"="Marginal_Plot",
+      "crplot"="Partial_Residual_Plot"
+    )),
+  
  actionButton(inputId ="goButtonmod", label =strong("Update Model", style = "color:blue"))
   
   ),
@@ -271,6 +314,15 @@ shinyUI(pageWithSidebar(
      selected="gauss"
      
    ),
+   selectInput(
+     inputId="radio.plots.glm",
+     label=strong("Diagnostic Plots"),
+     choices=list(
+       "avplot"="Added_Variable_Plot",
+       "resplot"="Residual_Plot",
+       "margplot"="Marginal_Plot",
+       "crplot"="Partial_Residual_Plot"
+     )),
    
    actionButton(inputId ="goButtonglm", label =strong("Update Model", style = "color:blue"))
    
@@ -281,16 +333,17 @@ shinyUI(pageWithSidebar(
 
  
     mainPanel(
-      
+     
   
       # Show a summary of the dataset and an HTML table with the requested
       # number of observations
       
       tabsetPanel(
         tabPanel("Data", tableOutput("contents")),
-        tabPanel("Plot", plotOutput("Plot", width = "1000px", height = "800px")),
+        tabPanel("Plot", plotOutput("Plot", width = "1000px", height = "800px"),
+                 downloadButton(outputId='downloadPlot', label= 'Download Plot')),
         tabPanel("Summary",verbatimTextOutput("summary")),
-        tabPanel("Simple Regresion",plotOutput("Regresion", width = "1000px", height = "800px"),
+        tabPanel("Simple Regresion",plotOutput("Regresion", width = "1000px", height = "1000px"),
                  
                  conditionalPanel("input.mod_linear == true",p(strong("Linear model")), 
                                   verbatimTextOutput(outputId = "mod_linear_text")),
@@ -301,11 +354,16 @@ shinyUI(pageWithSidebar(
                  conditionalPanel("input.mod_loess == true",p(strong("LOESS model")),
                                   verbatimTextOutput(outputId = "mod_loess_text"))
                   ),
-         tabPanel("Multiple Regression",verbatimTextOutput(outputId = "mult_reg_text")),
-         tabPanel("GLM",verbatimTextOutput(outputId = "glm_text"))
+         tabPanel("Multiple Regression",plotOutput("Mult_Regresion", width = "1000px", height = "600px"),
+                  verbatimTextOutput(outputId = "mult_reg_text")
+                  ),
+         tabPanel("GLM",plotOutput("GLM_Regresion", width = "1000px", height = "600px"),
+                  verbatimTextOutput(outputId = "glm_text")),
+         tabPanel("Help",verbatimTextOutput(outputId = "help_text"))
         
         
         )
+      
       
     )
  
