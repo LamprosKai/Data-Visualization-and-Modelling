@@ -499,9 +499,12 @@ else{
         summary(make_model("glm", formula)) }
       
       else if(input$radioglm != "All" && input$family != 'neg.bin'){
-        
         formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='+')) 
         summary(make_model("glm", formula)) }
+        
+        else if(input$radioglm == "All" && input$family == 'neg.bin'){
+         formula <- paste(input$glm_y, "~.") 
+         summary(make_model("glm.nb", formula)) }
       
       else {
         formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='+')) 
