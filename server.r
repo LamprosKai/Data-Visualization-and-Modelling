@@ -34,7 +34,8 @@ shinyServer(function(input, output,session) {
    updateSelectInput(session, 'attributes.dens', choices = names(df))
    updateSelectInput(session, 'attributes.bar', choices = names(df))
    updateSelectInput(session, 'attributes.ident', choices = names(df))
-   
+   updateSelectInput(session, 'attributesx.box', choices =c(None='.', names(df)))
+   updateSelectInput(session, 'attributesy.box', choices =c(None='.', names(df)))
    
    updateSelectInput(session, 'attributx', choices = names(df))
    updateSelectInput(session, 'attributy', choices = names(df))
@@ -50,7 +51,7 @@ shinyServer(function(input, output,session) {
    updateSelectInput(session, 'filline', choices = c(None='.', names(df)))
    updateSelectInput(session, 'filpoint', choices = c(None='.', names(df)))
    updateSelectInput(session, 'filbar', choices = c(None='.', names(df)))
-   
+   updateSelectInput(session, 'filbox', choices = c(None='.', names(df)))
    
    updateSelectInput(session, 'facet_col', choices = c(None='.', names(df)))
    updateSelectInput(session, 'facet_row', choices = c(None='.', names(df)))
@@ -62,6 +63,8 @@ shinyServer(function(input, output,session) {
    updateSelectInput(session, 'facet_row.dens', choices = c(None='.', names(df)))
    updateSelectInput(session, 'facet_col.bar', choices = c(None='.', names(df)))
    updateSelectInput(session, 'facet_row.bar', choices = c(None='.', names(df)))
+   updateSelectInput(session, 'facet_col.box', choices = c(None='.', names(df)))
+   updateSelectInput(session, 'facet_row.box', choices = c(None='.', names(df)))
    
    updateSelectInput(session, 'reg_y', choices = c(None='.', names(df)))
    updateSelectInput(session, 'reg_x', choices = c(None='.', names(df)))
@@ -83,6 +86,9 @@ shinyServer(function(input, output,session) {
                                                          Marginal_Plot="margplot",
                                                          Partial_Residual_Plot="crplot",
                                                          Coefplot='coefplot'))
+   updateSelectInput(session, 'help_page', choices = c(None='.', General_Help="gen.help",
+                                                             Plotting_Help="plot.help",
+                                                             Modelling_Help="mod.help"))
    
  }
 }) 
@@ -98,6 +104,7 @@ output$Plot <- renderPlot({
   input$goButton3
   input$goButton4
   input$goButton5
+  input$goButton6
   
   if ( input$plot == "none" ) {
     return(NULL)
@@ -129,6 +136,30 @@ output$Plot <- renderPlot({
     
   }) 
   
+  isolate({
+    
+    if ( input$plot == "box" ) {
+      
+      if(input$filbox!="." ){
+        aes_mapping <- aes_string(x = input$attributesx.box,y = input$attributesy.box,group=input$filbox,fill=input$filbox) }
+      
+      
+      else{
+        
+        aes_mapping <- aes_string(x =input$attributesx.box,y = input$attributesy.box)  }
+      
+      
+      #plot
+      p <- ggplot(data(),mapping=aes_mapping ) +
+        geom_boxplot()
+      
+      facets <- paste(input$facet_row.box, '~', input$facet_col.box)
+      if (facets != '. ~ .')
+        p <- p + facet_grid(facets,scales='free')  +theme(axis.text.x=element_text(angle = 90, hjust = 1,vjust=0.4,size=9))
+      
+    }
+    
+  })
   
   isolate({
     
@@ -418,11 +449,10 @@ output$GLM_Regresion <- renderPlot({
     else if(input$family=='binom'){
       do.call(model_type, args = list(formula = formula,data = quote(data()),family=quote(binomial),  ...))
     }
-    else if (input$family=='gamma'  && any(input$glm_y <= 0)){
-      do.call(model_type, args = list(formula = formula,data = quote(data()),family=quote(Gamma),subset=input$glm_y >0,  ...))
+    else if ( (input$family=='gamma') ){
+      do.call(model_type, args = list(formula = formula,data = quote(data()[,input$glm_y >0]),family=quote(Gamma),subset=input$glm_y >0,  ...))
     }
-    
-   
+
     else{
       do.call(model_type, args = list(formula = formula,data = quote(data()),  ...))
     }
@@ -467,14 +497,35 @@ output$GLM_Regresion <- renderPlot({
   if(input$goButtonmod > 0){
     
     isolate({
-    if(input$radio == "All"){
-      formula <- paste(input$mult_reg_y, "~.")
-      summary(make_model("lm", formula)) }
       
-     else{
+      if(input$radio == "All"){
+      
+      if( !input$interac_mult ){
+        formula <- paste(input$mult_reg_y, "~.")
+        summary(make_model("lm", formula)) }
+      
+      else if( input$interac_mult ){
+        formula <- paste(input$mult_reg_y, "~.*.")
+        summary(make_model("lm", formula))
+      }
+      
+    } 
+    else{
+      
+      if( input$radio != "All"){
+        
+        if( !input$interac_mult ){
+          formula <- paste(input$mult_reg_y, "~", paste(input$mult_reg_x,collapse='+'))
+          summary(make_model("lm", formula)) }
+        
+        else if( input$interac_mult ){
+      formula <- paste(input$mult_reg_y, "~", paste(input$mult_reg_x,collapse='*'))
+      summary(make_model("lm", formula))
+        }
+      }
+    }
     
-  formula <- paste(input$mult_reg_y, "~", paste(input$mult_reg_x,collapse='+'))
-  summary(make_model("lm", formula)) }
+    
     })
   
 } 
@@ -493,23 +544,48 @@ else{
     
     isolate({
       
-    
-      if(input$radioglm == "All" && input$family != 'neg.bin'){
-        formula <- paste(input$glm_y, "~.")
-        summary(make_model("glm", formula)) }
-      
-      else if(input$radioglm != "All" && input$family != 'neg.bin'){
-        formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='+')) 
-        summary(make_model("glm", formula)) }
+        if( input$radioglm != "All"){
         
-        else if(input$radioglm == "All" && input$family == 'neg.bin'){
-         formula <- paste(input$glm_y, "~.") 
-         summary(make_model("glm.nb", formula)) }
+        if( (input$family != 'neg.bin') & (!input$interac) ){
+          formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='+')) 
+          summary(make_model("glm", formula)) }
+        else if( (input$family == 'neg.bin') & (!input$interac) ){
+          formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='+')) 
+          summary(make_model("glm.nb", formula))
+        }
+        else if( (input$family == 'neg.bin') & (input$interac) ){
+          formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+          summary(make_model("glm.nb", formula))
+        }
+        else if( (input$family != 'neg.bin') & (input$interac) ){
+          formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+          summary(make_model("glm", formula)) }
+        
+} 
+else{
+   
+      if( input$radioglm == "All"){
+  
+       if( (input$family != 'neg.bin') & (!input$interac) ){
+         formula <- paste(input$glm_y, "~.")
+         summary(make_model("glm", formula)) }
+         
+       else if( (input$family == 'neg.bin') & (!input$interac) ){
+         formula <- paste(input$glm_y, "~.")
+         summary(make_model("glm.nb", formula))
+         }
       
-      else {
-        formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='+')) 
-        summary(make_model("glm.nb", formula)) 
-      }
+       else if( (input$family == 'neg.bin') & (input$interac) ){
+         formula <- paste(input$glm_y, "~.*.") 
+         summary(make_model("glm.nb", formula))
+        }
+       else  if( (input$family != 'neg.bin') & (input$interac) ){
+         formula <- paste(input$glm_y, "~.*.")
+         summary(make_model("glm", formula)) }
+  
+   }
+}
+
     })
     
   } else{
@@ -521,24 +597,33 @@ else{
 
 output$help_text <- renderText({ 
   
-
+if(input$help_page=='gen.help'){
+  
 'Data Visualization and Modelling application using an uploaded csv.
 
- Part of the data and data summary is shown immediately after the uploading data set(by clicking on the specified tabs).
- The user is able to choose between plotting and modelling by "clicking" the boxes.
- 
- Plotting consists of histogram, barplot, density plot, line plot and point plot with the associated colour, size and faceting capabilities.
- For example when histogram is chosen , x axis is requested and then there is options for filling and faceting. The user chooses the 
- appropriate data columns.
- Barplot has one more option that of "identity", when the users "click" the box,the heights of the bars represent values in the data, and map a 
- value to the y aesthetic
- The same exist with line and point plots with size option(the size of point or line) as an addition.
+ Part of the data and data summary is shown immediately after the uploaded data set(by clicking on the specified tabs).
+ The user is able to choose the number of rows to appear as well as the csv format and if header will appear or not.
+ The user is able to choose between plotting and modelling by "clicking" the boxes.' 
+}
 
- Modelling consists of Simple regression, Multiple regression and Generalized Linear Model(GLM). By "clicking" the respective box
+ else if(input$help_page=='plot.help'){
+
+ 
+ 'Plotting consists of histogram,boxplot, barplot, density plot, line plot and point plot with the associated colour, size and faceting capabilities.
+ For example when histogram is chosen , x axis is requested and then there are options for filling and faceting. The user chooses the 
+ appropriate data columns.
+ Barplot has one more option that of "identity", when the user "click" the box,the heights of the bars represent the specific y-value in the data, 
+ and map a value to the y aesthetic
+ The same exist with line and point plots with size option(the size of point or line) as an addition.'
+}
+
+ else if(input$help_page=='mod.help'){
+
+ 'Modelling consists of Simple regression, Multiple regression and Generalized Linear Model(GLM). By "clicking" the respective box
  more options are available. 
 
  Simple Regression consists of one response and one dependent variable in the form "y~x" and the user chooses the appropriate variables.
- A plot of the selected raw columns appeared. By choosing one or more of the following boxes(Linear, Robust Linear) the app presents the 
+ A plot of the selected raw columns appeared. By choosing one or more of the following boxes(Linear, Robust Linear etc.) the app presents the 
  respective model summary and the smooth model line on the plot. Std.Error depicts the 95% confidence interval.
  
  Multiple regression builds a linear model of the form y~x1+x2+...+xk by choosing manual the number of predictor variables or choosing all variables.
@@ -554,8 +639,15 @@ output$help_text <- renderText({
  GLM builds a generalized linear model, again by choosing manual the number of predictor variables or choosing all variables, in addition to 
  family selection of the error term. 
  There are the same diagnostic plots as in multiple regression plus a coefplot, that is the coefficients and standard errors from a fitted model.
-
+ 
+ For Multiple regression and GLMs there is an option(called Predictor"s Interactions) to add interactions on the chosen predictors.
  ' 
-             
+}           
+  
+})
+
+
+
+
   
 })
