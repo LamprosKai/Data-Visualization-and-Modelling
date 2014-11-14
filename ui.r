@@ -1,4 +1,4 @@
- library(shiny)
+  library(shiny)
  
  dataset <- list('Upload a file'=c(1))
  
@@ -28,7 +28,7 @@ shinyUI(pageWithSidebar(
       
       
       selectInput(inputId ="plot",label=strong("Plot Type"),
-                  choices=list("None"="none","Histogram"="hist", "Barplot"="bar", "Density Chart"="dens",
+                  choices=list("None"="none","Histogram"="hist", "Boxplot"="box", "Barplot"="bar", "Density Chart"="dens",
                                                         "Linechart"="line","Pointchart"="point")),
       
       conditionalPanel(
@@ -56,6 +56,30 @@ shinyUI(pageWithSidebar(
         selectInput(inputId ='facet_row', label ='Facet Row', 
                     choices= c('None'='.',names(dataset))),
         selectInput(inputId ='facet_col', label ='Facet Column', 
+                    choices= c('None'='.',names(dataset)))
+        
+      ),
+      
+      conditionalPanel(
+        condition = "input.plot == 'box'",
+        
+        selectInput(inputId = "attributesx.box",
+                    label = "X",
+                    choices=names(dataset),selected='None'),
+        
+        selectInput(inputId = "attributesy.box",
+          label = "Y",
+          choices = names(dataset),selected='None'),
+        
+        actionButton(inputId ="goButton6", label =strong("Update View", style = "color:blue")),
+        
+        
+        selectInput(inputId ="filbox", label ="Fill",
+                    choices=c('None'='.',names(dataset))),
+        
+        selectInput(inputId ='facet_row.box', label ='Facet Row', 
+                    choices= c('None'='.',names(dataset))),
+        selectInput(inputId ='facet_col.box', label ='Facet Column', 
                     choices= c('None'='.',names(dataset)))
         
       ),
@@ -262,14 +286,16 @@ shinyUI(pageWithSidebar(
       
     )
   ),
+  checkboxInput(inputId = "interac_mult", label = "Predictor's Interactions"),
+  
   selectInput(
     inputId="radio.plots",
     label=strong("Diagnostic Plots"),
     choices=list(
-      "avplot"="Added_Variable_Plot",
-      "resplot"="Residual_Plot",
-      "margplot"="Marginal_Plot",
-      "crplot"="Partial_Residual_Plot"
+      "Added_Variable_Plot"="avplot",
+      "Residual_Plot"="resplot",
+      "Marginal_Plot"="margplot",
+      "Partial_Residual_Plot"="crplot"
     )),
   
  actionButton(inputId ="goButtonmod", label =strong("Update Model", style = "color:blue"))
@@ -314,16 +340,18 @@ shinyUI(pageWithSidebar(
      selected="gauss"
      
    ),
+   checkboxInput(inputId = "interac", label = "Predictor's Interactions"),
+   
    selectInput(
      inputId="radio.plots.glm",
      label=strong("Diagnostic Plots"),
      choices=list(
-       "avplot"="Added_Variable_Plot",
-       "resplot"="Residual_Plot",
-       "margplot"="Marginal_Plot",
-       "crplot"="Partial_Residual_Plot"
+       "Added_Variable_Plot"="avplot",
+       "Residual_Plot"="resplot",
+       "Marginal_Plot"="margplot",
+       "Partial_Residual_Plot"="crplot"
      )),
-   
+
    actionButton(inputId ="goButtonglm", label =strong("Update Model", style = "color:blue"))
    
  )
@@ -332,7 +360,7 @@ shinyUI(pageWithSidebar(
   )),
 
  
-    mainPanel(
+    mainPanel(tags$head(tags$style(type="text/css", ".tab-content {overflow: visible;}")),
      
   
       # Show a summary of the dataset and an HTML table with the requested
@@ -359,13 +387,16 @@ shinyUI(pageWithSidebar(
                   ),
          tabPanel("GLM",plotOutput("GLM_Regresion", width = "1000px", height = "600px"),
                   verbatimTextOutput(outputId = "glm_text")),
-         tabPanel("Help",verbatimTextOutput(outputId = "help_text"))
-        
-        
-        )
-      
-      
-    )
+         tabPanel("Help", selectInput(inputId = "help_page",
+                                               label = strong("Search Help"),
+                                               choices = list('None'='.',
+                                                 "General Help"="gen.help",
+                                                 "Plotting Help"="plot.help",
+                                                 "Modelling Help"="mod.help")),verbatimTextOutput(outputId = "help_text"))
  
   
-  ))
+  )
+  )
+ 
+))
+ 
