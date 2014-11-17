@@ -1,8 +1,10 @@
 
+
 library(ggplot2)
 library(MASS)
 library(car)
 library(coefplot)
+library(boot)
 
 
 shinyServer(function(input, output,session) {
@@ -83,7 +85,6 @@ shinyServer(function(input, output,session) {
                                                          Partial_Residual_Plot="crplot"))
    updateSelectInput(session, 'radio.plots.glm', choices = c(None='.', Added_Variable_Plot="avplot",
                                                          Residual_Plot="resplot",
-                                                         Marginal_Plot="margplot",
                                                          Partial_Residual_Plot="crplot",
                                                          Coefplot='coefplot'))
    updateSelectInput(session, 'help_page', choices = c(None='.', General_Help="gen.help",
@@ -350,75 +351,498 @@ output$downloadPlot <- downloadHandler(
   })
 
 output$Mult_Regresion <- renderPlot({
-  
-  
-  input$goButtonmod
-  if(input$goButtonmod > 0){
-    
-    isolate({
-      if(input$radio == "All"){
-        formula <- paste(input$mult_reg_y, "~.")
-        
-      }
-      
-      else{
-        
-        formula <- paste(input$mult_reg_y, "~", paste(input$mult_reg_x,collapse='+'))
-      }
-    })
-    
-  }
-  
-  if(input$radio.plots == "avplot"){
+
+  #make added variable plots
+ if( input$radio != "All"){
+  if( (input$radio.plots == "avplot") & (!input$interac_mult)) {
+    formula <- paste(input$mult_reg_y, "~", paste(input$mult_reg_x,collapse='+'))
     avPlots(lm(formula,data=data()))
   }
-  if(input$radio.plots == "resplot"){
+  else if((input$radio.plots == "avplot") & (input$interac_mult)){
+    formula <- paste(input$mult_reg_y, "~", paste(input$mult_reg_x,collapse='*'))
+    avPlots(lm(formula,data=data()))
+  }
+ }
+
+ else{
+  if( input$radio == "All"){
+    if( (input$radio.plots == "avplot") & (!input$interac_mult)) {
+      formula <- paste(input$mult_reg_y, "~.")
+      avPlots(lm(formula,data=data()))
+    }
+    else if( (input$radio.plots == "avplot") & (input$interac_mult)){
+      formula <- paste(input$mult_reg_y, "~.*.",collapse='*')
+      avPlots(lm(formula,data=data()))
+    }
+ }
+ }
+ 
+ 
+#make residual plots
+if( input$radio != "All"){
+  if( (input$radio.plots == "resplot") & (!input$interac_mult)){
+    formula <- paste(input$mult_reg_y, "~", paste(input$mult_reg_x,collapse='+'))
     residualPlots(lm(formula,data=data()))
   }
-  if(input$radio.plots == "margplot"){
+  else if((input$radio.plots == "resplot") & (input$interac_mult)){
+    formula <- paste(input$mult_reg_y, "~", paste(input$mult_reg_x,collapse='*'))
+    residualPlots(lm(formula,data=data()))
+  }
+}
+
+else{
+  if( input$radio == "All"){
+    if( (input$radio.plots == "resplot") & (!input$interac_mult)){
+      formula <- paste(input$mult_reg_y, "~.")
+      residualPlots(lm(formula,data=data()))
+    }
+    else if((input$radio.plots == "resplot") & (input$interac_mult)){
+      formula <- paste(input$mult_reg_y, "~.*.",collapse='*')
+      residualPlots(lm(formula,data=data()))
+    }
+  }
+} 
+
+  
+#make marginal plots
+if( input$radio != "All"){
+  if( (input$radio.plots == "margplot") & (!input$interac_mult)){
+    formula <- paste(input$mult_reg_y, "~", paste(input$mult_reg_x,collapse='+'))
     marginalModelPlots(lm(formula,data=data()))
   }
-  if(input$radio.plots == "crplot"){
+  else if((input$radio.plots == "margplot") & (input$interac_mult)){
+    formula <- paste(input$mult_reg_y, "~", paste(input$mult_reg_x,collapse='*'))
+    marginalModelPlots(lm(formula,data=data()))
+  }
+}
+
+else{
+  if( input$radio == "All"){
+    if( (input$radio.plots == "margplot") & (!input$interac_mult)){
+      formula <- paste(input$mult_reg_y, "~.")
+      marginalModelPlots(lm(formula,data=data()))
+    }
+    else if((input$radio.plots == "margplot") & (input$interac_mult)){
+      formula <- paste(input$mult_reg_y, "~.*.",collapse='*')
+      marginalModelPlots(lm(formula,data=data()))
+    }
+  }
+} 
+ 
+#make cr plots
+if( input$radio != "All"){
+  if( (input$radio.plots == "crplot") & (!input$interac_mult)){
+    formula <- paste(input$mult_reg_y, "~", paste(input$mult_reg_x,collapse='+'))
     crPlots(lm(formula,data=data()))
   }
+  else if((input$radio.plots == "crplot") & (input$interac_mult)){
+    formula <- paste(input$mult_reg_y, "~", paste(input$mult_reg_x,collapse='*'))
+    crPlots(lm(formula,data=data()))
+  }
+}
+
+else{
+  if( input$radio == "All"){
+    if( (input$radio.plots == "crplot") & (!input$interac_mult)){
+      formula <- paste(input$mult_reg_y, "~.")
+      crPlots(lm(formula,data=data()))
+    }
+    else if((input$radio.plots == "crplot") & (input$interac_mult)){
+      formula <- paste(input$mult_reg_y, "~.*.",collapse='*')
+      crPlots(lm(formula,data=data()))
+    }
+  }
+} 
   
 })
 
 output$GLM_Regresion <- renderPlot({
-  
-  
-  input$goButtonglm
-  if(input$goButtonglm > 0){
-    
-    isolate({
-      if(input$radioglm == "All"){
-        formula <- paste(input$glm_y, "~.")
-        
-      }
-      
-      else{
-        
-        formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='+'))
-      }
-    })
-    
-  }
-  
+
+#make added variable plots  
+
+ if( input$radioglm != "All"){
   if(input$radio.plots.glm == "avplot"){
-    avPlots(lm(formula,data=data()))
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='+'))
+    
+    if( (input$family=='pois') & (!input$interac) ){
+      avPlots(glm(formula,data=data(),family=poisson)) }
+    
+    else if( (input$family == 'neg.bin') & (!input$interac) ){
+      avPlots(glm.nb(formula,data=data()))
+    }
+    else if( (input$family=='binom') & (!input$interac) ){
+      avPlots(glm(formula,data=data(),family=binomial))
+    }
+    else if( (input$family=='gamma') & (!input$interac) ){
+      avPlots(glm(formula,data=data(),family=Gamma))
+    }
+    else if( (input$family=='gauss') & (!input$interac) ){
+      avPlots(glm(formula,data=data()))
+    }
+    else if( (input$family=='pois') & (input$interac) ){
+      formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+      avPlots(glm(formula,data=data(),family=poisson)) 
+    }
+    else if( (input$family == 'neg.bin') & (input$interac) ){
+      formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+      avPlots(glm.nb(formula,data=data()))  
+    }
+    else if( (input$family == 'binom') & (input$interac) ){
+      formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+      avPlots(glm(formula,data=data(),family=binomial))  
+    }
+    else if( (input$family == 'gamma') & (input$interac) ){
+      formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+      avPlots(glm(formula,data=data(),family=Gamma))  
+    }
+    else if( (input$family == 'gauss') & (input$interac) ){
+      formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+      avPlots(glm(formula,data=data()))  
+    }
+    else{
+      NULL
+    }
   }
+}
+else{
+  if( input$radioglm == "All"){
+    
+    if(input$radio.plots.glm == "avplot"){
+      formula <- paste(input$glm_y, "~.")
+      
+      if( (input$family=='pois') & (!input$interac) ){
+        avPlots(glm(formula,data=data(),family=poisson)) }
+      
+      else if( (input$family == 'neg.bin') & (!input$interac) ){
+        avPlots(glm.nb(formula,data=data()))
+      }
+      else if( (input$family=='binom') & (!input$interac) ){ 
+        avPlots(glm(formula,data=data(),family=binomial))
+      }
+      else if( (input$family=='gamma') & (!input$interac) ){
+        avPlots(glm(formula,data=data(),family=Gamma))
+      }
+      else if( (input$family=='gauss') & (!input$interac) ){
+        avPlots(glm(formula,data=data()))
+      }
+      else if( (input$family=='pois') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*') 
+        avPlots(glm(formula,data=data(),family=poisson)) 
+      }
+      else if( (input$family == 'neg.bin') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*') 
+        avPlots(glm.nb(formula,data=data()))  
+      }
+      else if( (input$family == 'binom') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*') 
+        avPlots(glm(formula,data=data(),family=binomial))  
+      }
+      else if( (input$family == 'gamma') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*')
+        avPlots(glm(formula,data=data(),family=Gamma))  
+      }
+      else if( (input$family == 'gauss') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*')
+        avPlots(glm(formula,data=data()))  
+      }
+      else{
+        NULL
+      }
+    }
+  }
+  
+}
+  
+#make diagnostic plots
+ if( input$radioglm != "All"){
   if(input$radio.plots.glm == "resplot"){
-    residualPlots(lm(formula,data=data()))
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='+'))
+
+  if( (input$family=='pois') & (!input$interac) ){
+    glm.diag.plots(glm(formula,data=data(),family=poisson)) }
+  
+  else if( (input$family == 'neg.bin') & (!input$interac) ){
+    glm.diag.plots(glm.nb(formula,data=data()))
   }
-  if(input$radio.plots.glm == "margplot"){
-    marginalModelPlots(lm(formula,data=data()))
+  else if( (input$family=='binom') & (!input$interac) ){
+    glm.diag.plots(glm(formula,data=data(),family=binomial))
   }
+  else if( (input$family=='gamma') & (!input$interac) ){
+    glm.diag.plots(glm(formula,data=data(),family=Gamma))
+  }
+  else if( (input$family=='gauss') & (!input$interac) ){
+    glm.diag.plots(glm(formula,data=data()))
+  }
+  else if( (input$family=='pois') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    glm.diag.plots(glm(formula,data=data(),family=poisson)) 
+  }
+  else if( (input$family == 'neg.bin') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    glm.diag.plots(glm.nb(formula,data=data()))  
+  }
+  else if( (input$family == 'binom') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    glm.diag.plots(glm(formula,data=data(),family=binomial))  
+  }
+  else if( (input$family == 'gamma') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    glm.diag.plots(glm(formula,data=data(),family=Gamma))  
+  }
+  else if( (input$family == 'gauss') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    glm.diag.plots(glm(formula,data=data()))  
+  }
+  else{
+    NULL
+  }
+}
+}
+
+else{
+  if( input$radioglm == "All"){
+    if(input$radio.plots.glm == "resplot"){
+      formula <- paste(input$glm_y, "~.")
+      
+      if( (input$family=='pois') & (!input$interac) ){
+        glm.diag.plots(glm(formula,data=data(),family=poisson)) }
+      
+      else if( (input$family == 'neg.bin') & (!input$interac) ){
+        glm.diag.plots(glm.nb(formula,data=data()))
+      }
+      else if( (input$family=='binom') & (!input$interac) ){ 
+        glm.diag.plots(glm(formula,data=data(),family=binomial))
+      }
+      else if( (input$family=='gamma') & (!input$interac) ){
+        glm.diag.plots(glm(formula,data=data(),family=Gamma))
+      }
+      else if( (input$family=='gauss') & (!input$interac) ){
+        glm.diag.plots(glm(formula,data=data()))
+      }
+      else if( (input$family=='pois') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*') 
+        glm.diag.plots(glm(formula,data=data(),family=poisson)) 
+      }
+      else if( (input$family == 'neg.bin') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*') 
+        glm.diag.plots(glm.nb(formula,data=data()))  
+      }
+      else if( (input$family == 'binom') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*') 
+        glm.diag.plots(glm(formula,data=data(),family=binomial))  
+      }
+      else if( (input$family == 'gamma') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*')
+        glm.diag.plots(glm(formula,data=data(),family=Gamma))  
+      }
+      else if( (input$family == 'gauss') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*')
+        glm.diag.plots(glm(formula,data=data()))  
+      }
+      else{
+        NULL
+      }
+    
+    }
+  
+  }
+}
+  
+#make crplots
+ if( input$radioglm != "All"){
   if(input$radio.plots.glm == "crplot"){
-    crPlots(lm(formula,data=data()))
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='+'))
+  
+  
+  if( (input$family=='pois') & (!input$interac) ){
+    crPlots(glm(formula,data=data(),family=poisson)) }
+  
+  else if( (input$family == 'neg.bin') & (!input$interac) ){
+    crPlots(glm.nb(formula,data=data()))
   }
+  else if( (input$family=='binom') & (!input$interac) ){
+    crPlots(glm(formula,data=data(),family=binomial))
+  }
+  else if( (input$family=='gamma') & (!input$interac) ){
+    crPlots(glm(formula,data=data(),family=Gamma))
+  }
+  else if( (input$family=='gauss') & (!input$interac) ){
+    crPlots(glm(formula,data=data()))
+  }
+  else if( (input$family=='pois') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    crPlots(glm(formula,data=data(),family=poisson)) 
+  }
+  else if( (input$family == 'neg.bin') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    crPlots(glm.nb(formula,data=data()))  
+  }
+  else if( (input$family == 'neg.bin') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    crPlots(glm.nb(formula,data=data()))  
+  }
+  else if( (input$family == 'binom') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    crPlots(glm(formula,data=data(),family=binomial))  
+  }
+  else if( (input$family == 'gamma') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    crPlots(glm(formula,data=data(),family=Gamma))  
+  }
+  else if( (input$family == 'gauss') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    crPlots(glm(formula,data=data()))  
+  }
+  else{
+    NULL
+  }
+}  
+}
+else{
+  if( input$radioglm == "All"){
+    if(input$radio.plots.glm == "crplot"){
+      formula <- paste(input$glm_y, "~.")
+      
+      if( (input$family=='pois') & (!input$interac) ){
+        crPlots(glm(formula,data=data(),family=poisson)) }
+      
+      else if( (input$family == 'neg.bin') & (!input$interac) ){
+        crPlots(glm.nb(formula,data=data()))
+      }
+      else if( (input$family=='binom') & (!input$interac) ){ 
+        crPlots(glm(formula,data=data(),family=binomial))
+      }
+      else if( (input$family=='gamma') & (!input$interac) ){
+        crPlots(glm(formula,data=data(),family=Gamma))
+      }
+      else if( (input$family=='gauss') & (!input$interac) ){
+        crPlots(glm(formula,data=data()))
+      }
+      else if( (input$family=='pois') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*') 
+        crPlots(glm(formula,data=data(),family=poisson)) 
+      }
+      else if( (input$family == 'neg.bin') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*') 
+        crPlots(glm.nb(formula,data=data()))  
+      }
+      else if( (input$family == 'binom') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*') 
+        crPlots(glm(formula,data=data(),family=binomial))  
+      }
+      else if( (input$family == 'gamma') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*')
+        crPlots(glm(formula,data=data(),family=Gamma))  
+      }
+      else if( (input$family == 'gauss') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*')
+        crPlots(glm(formula,data=data()))  
+      }
+      else{
+        NULL
+      }
+    }
+  }
+}
+
+
+#make coefplot 
+ if( input$radioglm != "All"){
   if(input$radio.plots.glm == "coefplot"){
-    coefplot(lm(formula,data=data()))
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='+'))
+  
+  
+  if( (input$family=='pois') & (!input$interac) ){
+    coefplot(glm(formula,data=data(),family=poisson)) }
+  
+  else if( (input$family == 'neg.bin') & (!input$interac) ){
+    coefplot(glm.nb(formula,data=data()))
   }
+  else if( (input$family=='binom') & (!input$interac) ){
+    coefplot(glm(formula,data=data(),family=binomial))
+  }
+  else if( (input$family=='gamma') & (!input$interac) ){
+    coefplot(glm(formula,data=data(),family=Gamma))
+  }
+  else if( (input$family=='gauss') & (!input$interac) ){
+    coefplot(glm(formula,data=data()))
+  }
+  else if( (input$family=='pois') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    coefplot(glm(formula,data=data(),family=poisson)) 
+  }
+  else if( (input$family == 'neg.bin') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    coefplot(glm.nb(formula,data=data()))  
+  }
+  else if( (input$family == 'neg.bin') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    coefplot(glm.nb(formula,data=data()))  
+  }
+  else if( (input$family == 'binom') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    coefplot(glm(formula,data=data(),family=binomial))  
+  }
+  else if( (input$family == 'gamma') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    coefplot(glm(formula,data=data(),family=Gamma))  
+  }
+  else if( (input$family == 'gauss') & (input$interac) ){
+    formula <- paste(input$glm_y, "~", paste(input$glm_x,collapse='*')) 
+    coefplot(glm(formula,data=data()))  
+  }
+  else{
+    NULL
+  }
+}
+}
+
+else{
+  if( input$radioglm == "All"){
+    if(input$radio.plots.glm == "coefplot"){
+      formula <- paste(input$glm_y, "~.")
+      
+      if( (input$family=='pois') & (!input$interac) ){
+        coefplot(glm(formula,data=data(),family=poisson)) }
+      
+      else if( (input$family == 'neg.bin') & (!input$interac) ){
+        coefplot(glm.nb(formula,data=data()))
+      }
+      else if( (input$family=='binom') & (!input$interac) ){ 
+        coefplot(glm(formula,data=data(),family=binomial))
+      }
+      else if( (input$family=='gamma') & (!input$interac) ){
+        coefplot(glm(formula,data=data(),family=Gamma))
+      }
+      else if( (input$family=='gauss') & (!input$interac) ){
+        coefplot(glm(formula,data=data()))
+      }
+      else if( (input$family=='pois') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*') 
+        coefplot(glm(formula,data=data(),family=poisson)) 
+      }
+      else if( (input$family == 'neg.bin') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*') 
+        coefplot(glm.nb(formula,data=data()))  
+      }
+      else if( (input$family == 'binom') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*') 
+        coefplot(glm(formula,data=data(),family=binomial))  
+      }
+      else if( (input$family == 'gamma') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*')
+        coefplot(glm(formula,data=data(),family=Gamma))  
+      }
+      else if( (input$family == 'gauss') & (input$interac) ){
+        formula <- paste(input$glm_y, "~.*.",collapse='*')
+        coefplot(glm(formula,data=data()))  
+      }
+      else{
+        NULL
+      }
+    }
+  }
+}
   
 })
 
@@ -436,7 +860,7 @@ output$GLM_Regresion <- renderPlot({
   # ------------------------------------------------------------------
   # Functions for creating models and printing summaries
   
-  make_model <- function(model_type, formula, family=NULL,...) {
+  make_model <- function(model_type, formula, family=NULL,subset=NULL,...) {
     
     # In order to get the output to print the formula in a nice way, we'll
     # use do.call here with some quoting.
@@ -449,8 +873,11 @@ output$GLM_Regresion <- renderPlot({
     else if(input$family=='binom'){
       do.call(model_type, args = list(formula = formula,data = quote(data()),family=quote(binomial),  ...))
     }
-    else if ( (input$family=='gamma') ){
-      do.call(model_type, args = list(formula = formula,data = quote(data()[,input$glm_y >0]),family=quote(Gamma),subset=input$glm_y >0,  ...))
+    else if (input$family=='gamma'){
+      do.call(model_type, args = list(formula = formula,data = quote(data()),family=quote(Gamma),  ...))
+    }
+    else if ( (input$family=='gamma') & (input$glm_y <=0) ){
+     do.call(model_type, args = list(formula = formula,data = quote(data()),family=quote(Gamma),subset=quote(input$glm_y >0),  ...))
     }
 
     else{
@@ -638,9 +1065,20 @@ if(input$help_page=='gen.help'){
  
  GLM builds a generalized linear model, again by choosing manual the number of predictor variables or choosing all variables, in addition to 
  family selection of the error term. 
- There are the same diagnostic plots as in multiple regression plus a coefplot, that is the coefficients and standard errors from a fitted model.
+ There are diagnostic plots as in multiple regression plus a different residual plot with the following plots: 
+ The plot on the top left is a plot of the jackknife deviance residuals against the fitted values.
+ The plot on the top right is a normal QQ plot of the standardized deviance residuals. 
+ The dotted line is the expected line if the standardized residuals are normally distributed, i.e. it is the line with intercept 0 and slope 1.
+ The bottom two panels are plots of the Cook statistics. On the left is a plot of the Cook statistics against the standardized leverages. 
+ In general there will be two dotted lines on this plot. The horizontal line is at 8/(n-2p) where n is the number of observations and p 
+ is the number of parameters estimated. Points above this line may be points with high influence on the model. The vertical line is at 
+ 2p/(n-2p) and points to the right of this line have high leverage compared to the variance of the raw residual at that point. 
+ If all points are below the horizontal line or to the left of the vertical line then the line is not shown.
+ The final plot again shows the Cook statistic this time plotted against case number enabling us to find which observations are influential.
  
- For Multiple regression and GLMs there is an option(called Predictor"s Interactions) to add interactions on the chosen predictors.
+ and a coefplot, that is the coefficients and standard errors from a fitted model.
+ 
+ For Multiple regression and GLMs there is an option(called Predictor"s Interactions) to add interactions between the chosen predictors.
  ' 
 }           
   
