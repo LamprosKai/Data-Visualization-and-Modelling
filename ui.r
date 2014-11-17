@@ -1,4 +1,5 @@
-  library(shiny)
+
+ library(shiny)
  
  dataset <- list('Upload a file'=c(1))
  
@@ -348,7 +349,6 @@ shinyUI(pageWithSidebar(
      choices=list(
        "Added_Variable_Plot"="avplot",
        "Residual_Plot"="resplot",
-       "Marginal_Plot"="margplot",
        "Partial_Residual_Plot"="crplot"
      )),
 
@@ -399,4 +399,5 @@ shinyUI(pageWithSidebar(
   )
  
 ))
+ 
  
