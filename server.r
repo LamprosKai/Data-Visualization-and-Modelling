@@ -18,16 +18,6 @@ shinyServer(function(input, output,session) {
     
   })   
   
-  output$contents <- renderTable({
-  inFile <- input$file1
-  
-  if (is.null(inFile))
-    return(NULL)
-  
-  read.csv(inFile$datapath, header=input$header, sep=input$sep)       #, quote=input$quote
- 
-  })  
-  
  observe({
  df <- data()
 
