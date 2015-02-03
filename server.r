@@ -6,7 +6,7 @@ library(car)
 library(coefplot)
 library(boot)
 
-
+options(shiny.maxRequestSize=30*1024^2)
 shinyServer(function(input, output,session) {
   
   data <- reactive({
